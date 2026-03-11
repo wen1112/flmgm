@@ -8,6 +8,14 @@ This app adapts the FL-MGM SFT classification workflow to the FeatureCloud app m
 - Aggregates model updates on the coordinator.
 - Iterates for multiple rounds.
 
+## Get MGM as based model to test
+```
+git clone https://github.com/wen1112/flmgm.git
+git clone https://github.com/HUST-NingKang-Lab/MGM.git
+cp -r MGM/mgm ./flmgm
+
+```
+
 ## Key Files
 
 - states.py: FeatureCloud state machine and training logic
