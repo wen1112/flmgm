@@ -1,0 +1,39 @@
+input_base: /mnt/input
+label_column: Env
+label_values: ["B(C)", "B(B)", "4M(C)", "4M(B)", "12M(C)", "12M(B)", "3Y(C)", "3Y(B)", "5Y(C)", "5Y(B)", "M(C)", "M(B)"]
+
+num_rounds: 50
+global_early_stopping_patience: 0
+global_min_delta: 0.0
+
+aggregation_strategy: weighted
+mu: 0.1
+
+local_epochs: 5
+local_early_stopping_patience: 3
+batch_size: 32
+learning_rate: 5e-5
+weight_decay: 0.01
+warmup_ratio: 0.1
+lr_scheduler_type: constant_with_warmup
+train_val_split: 0.9
+
+client_metadata_file: metadata.csv
+data_file: data.csv
+
+global_val_file: global_val/data.csv
+global_val_metadata_file: global_val/metadata.csv
+
+model_path: mgm/flmgm_cpt_model
+outputs_base_dir: /mnt/output
+
+use_dp: false
+dp_epsilon: 1.0
+dp_delta: 1e-5
+dp_clip_norm: 1.0
+
+use_smpc: false
+smpc_exponent: 8
+smpc_shards: 0
+
+seed: 42
