@@ -14,7 +14,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Read repository clone traffic
         env:
@@ -49,11 +49,17 @@ jobs:
           </svg>
           EOF
 
+      - name: Refresh badge URL
+        run: |
+          sed -E -i \
+            "s#\./badges/downloads\.svg(\?v=[^ \"\)]*)?#./badges/downloads.svg?v=${DOWNLOAD_COUNT}#" \
+            README.md
+
       - name: Commit updated badge
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add badges/downloads.svg
+          git add README.md badges/downloads.svg
 
           if git diff --cached --quiet; then
             echo "Badge has not changed"
