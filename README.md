@@ -1,6 +1,6 @@
 # flmgm-sft FeatureCloud App
 
-![downloads](./badges/downloads.svg?v=6 "GitHub full clones during the latest 14-day traffic window")
+![downloads](./badges/downloads.svg?v=6 "Cumulative GitHub full clones tracked by this repository workflow")
 
 This app adapts the FL-MGM SFT classification workflow to the FeatureCloud app model.
 
