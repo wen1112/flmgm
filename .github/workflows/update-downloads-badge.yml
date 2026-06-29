@@ -77,27 +77,28 @@ jobs:
               if err.code == 404:
                 return default
               raise
-            content = item.get("content", "")
-            return base64.b64decode(content).decode("utf-8")
+            return base64.b64decode(item.get("content", "")).decode("utf-8")
 
           def make_svg(count):
             label_width = 80
             value_width = len(str(count)) * 7 + 28
             width = label_width + value_width
             value_x = label_width + value_width // 2
-            return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="20" role="img" aria-label="downloads: {count}">
-  <title>downloads: {count}</title>
-  <clipPath id="r"><rect width="{width}" height="20" rx="3"/></clipPath>
-  <g clip-path="url(#r)">
-    <rect width="{label_width}" height="20" fill="#555"/>
-    <rect x="{label_width}" width="{value_width}" height="20" fill="#2ea44f"/>
-  </g>
-  <g fill="#fff" font-family="Verdana,Arial,sans-serif" font-size="11" text-anchor="middle">
-    <text x="40" y="14">downloads</text>
-    <text x="{value_x}" y="14">{count}</text>
-  </g>
-</svg>
-'''
+            return "\n".join([
+              f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="20" role="img" aria-label="downloads: {count}">',
+              f'  <title>downloads: {count}</title>',
+              f'  <clipPath id="r"><rect width="{width}" height="20" rx="3"/></clipPath>',
+              '  <g clip-path="url(#r)">',
+              f'    <rect width="{label_width}" height="20" fill="#555"/>',
+              f'    <rect x="{label_width}" width="{value_width}" height="20" fill="#2ea44f"/>',
+              '  </g>',
+              '  <g fill="#fff" font-family="Verdana,Arial,sans-serif" font-size="11" text-anchor="middle">',
+              '    <text x="40" y="14">downloads</text>',
+              f'    <text x="{value_x}" y="14">{count}</text>',
+              '  </g>',
+              '</svg>',
+              '',
+            ])
 
           latest = api("GET", f"/repos/{REPO}/traffic/clones", TRAFFIC_TOKEN)
           history_text = read_text("badges/downloads-history.json", "{}")
@@ -106,21 +107,18 @@ jobs:
 
           history = json.loads(history_text or "{}")
           daily = {str(k): int(v) for k, v in history.get("daily", {}).items()}
-
           for item in latest.get("clones", []):
             date = str(item.get("timestamp", ""))[:10]
             count = int(item.get("count") or 0)
-            if not date or count <= 0:
-              continue
-            daily[date] = max(int(daily.get(date, 0)), count)
+            if date and count > 0:
+              daily[date] = max(int(daily.get(date, 0)), count)
 
           total = sum(daily.values())
-          history = {
+          new_history = json.dumps({
             "note": "Cumulative GitHub clone downloads tracked by this repository workflow. GitHub only exposes the latest 14 days, so history starts when this file was introduced. The workflow updates files through the GitHub API to avoid adding its own checkout to clone traffic.",
             "daily": {date: daily[date] for date in sorted(daily)},
             "total": total,
-          }
-          new_history = json.dumps(history, indent=2, ensure_ascii=False) + "\n"
+          }, indent=2, ensure_ascii=False) + "\n"
           new_svg = make_svg(total)
           new_readme = re.sub(
             r"\./badges/downloads\.svg(?:\?v=[^ \"\)]*)?",
@@ -147,45 +145,12 @@ jobs:
           ref = api("GET", f"/repos/{REPO}/git/ref/{urllib.parse.quote(branch_ref, safe='/')}", GITHUB_TOKEN)
           head_sha = ref["object"]["sha"]
           head_commit = api("GET", f"/repos/{REPO}/git/commits/{head_sha}", GITHUB_TOKEN)
-          base_tree = head_commit["tree"]["sha"]
-
           tree_entries = []
           for path, text in changed.items():
-            blob = api(
-              "POST",
-              f"/repos/{REPO}/git/blobs",
-              GITHUB_TOKEN,
-              {"content": text, "encoding": "utf-8"},
-            )
-            tree_entries.append({
-              "path": path,
-              "mode": "100644",
-              "type": "blob",
-              "sha": blob["sha"],
-            })
-
-          tree = api(
-            "POST",
-            f"/repos/{REPO}/git/trees",
-            GITHUB_TOKEN,
-            {"base_tree": base_tree, "tree": tree_entries},
-          )
-          commit = api(
-            "POST",
-            f"/repos/{REPO}/git/commits",
-            GITHUB_TOKEN,
-            {
-              "message": "chore: update downloads badge",
-              "tree": tree["sha"],
-              "parents": [head_sha],
-            },
-          )
-          api(
-            "PATCH",
-            f"/repos/{REPO}/git/refs/{urllib.parse.quote(branch_ref, safe='/')}",
-            GITHUB_TOKEN,
-            {"sha": commit["sha"], "force": False},
-          )
-
+            blob = api("POST", f"/repos/{REPO}/git/blobs", GITHUB_TOKEN, {"content": text, "encoding": "utf-8"})
+            tree_entries.append({"path": path, "mode": "100644", "type": "blob", "sha": blob["sha"]})
+          tree = api("POST", f"/repos/{REPO}/git/trees", GITHUB_TOKEN, {"base_tree": head_commit["tree"]["sha"], "tree": tree_entries})
+          commit = api("POST", f"/repos/{REPO}/git/commits", GITHUB_TOKEN, {"message": "chore: update downloads badge", "tree": tree["sha"], "parents": [head_sha]})
+          api("PATCH", f"/repos/{REPO}/git/refs/{urllib.parse.quote(branch_ref, safe='/')}", GITHUB_TOKEN, {"sha": commit["sha"], "force": False})
           print(f"Updated downloads badge to {total} in commit {commit['sha']}")
           PY
