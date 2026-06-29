@@ -1,8 +1,7 @@
 {
-  "note": "Cumulative GitHub clone downloads tracked by this repository workflow. GitHub only exposes the latest 14 days, so history starts when this file was introduced. The workflow updates files through the GitHub API to avoid adding its own checkout to clone traffic.",
-  "daily": {
-    "2026-06-10": 1,
-    "2026-06-13": 1,
+  "note": "Cumulative GitHub clone downloads tracked by this repository workflow. GitHub only exposes the latest 14 days. base_total is a manual reset value; ignored_daily prevents pre-reset traffic from being counted again.",
+  "base_total": 52,
+  "ignored_daily": {
     "2026-06-16": 1,
     "2026-06-19": 2,
     "2026-06-20": 1,
@@ -11,5 +10,6 @@
     "2026-06-26": 9,
     "2026-06-27": 12
   },
-  "total": 116
+  "daily": {},
+  "total": 52
 }

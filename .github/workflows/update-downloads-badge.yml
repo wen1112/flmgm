@@ -106,16 +106,21 @@ jobs:
           old_svg = read_text("badges/downloads.svg", "")
 
           history = json.loads(history_text or "{}")
+          base_total = int(history.get("base_total") or 0)
+          ignored_daily = {str(k): int(v) for k, v in history.get("ignored_daily", {}).items()}
           daily = {str(k): int(v) for k, v in history.get("daily", {}).items()}
           for item in latest.get("clones", []):
             date = str(item.get("timestamp", ""))[:10]
-            count = int(item.get("count") or 0)
+            raw_count = int(item.get("count") or 0)
+            count = max(0, raw_count - int(ignored_daily.get(date, 0)))
             if date and count > 0:
               daily[date] = max(int(daily.get(date, 0)), count)
 
-          total = sum(daily.values())
+          total = base_total + sum(daily.values())
           new_history = json.dumps({
-            "note": "Cumulative GitHub clone downloads tracked by this repository workflow. GitHub only exposes the latest 14 days, so history starts when this file was introduced. The workflow updates files through the GitHub API to avoid adding its own checkout to clone traffic.",
+            "note": "Cumulative GitHub clone downloads tracked by this repository workflow. GitHub only exposes the latest 14 days. base_total is a manual reset value; ignored_daily prevents pre-reset traffic from being counted again.",
+            "base_total": base_total,
+            "ignored_daily": {date: ignored_daily[date] for date in sorted(ignored_daily)},
             "daily": {date: daily[date] for date in sorted(daily)},
             "total": total,
           }, indent=2, ensure_ascii=False) + "\n"
